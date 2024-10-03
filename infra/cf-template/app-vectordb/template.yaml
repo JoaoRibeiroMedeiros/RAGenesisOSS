@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation Template to Deploy EC2 with Milvus and ECR Access
+
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: 'c5.xlarge'
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - c5.xlarge
+      - c5.2xlarge
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+  JinaApiKey:
+    Description: Jina API Key
+    Type: String
+    Default: 'YOUR_JINA'
+
+  KeyName:
+    Default: MilvusKeyPair
+    Description: Name of an existing EC2 KeyPair to enable SSH access.
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+  MilvusInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: ami-0427090fd1714168b  # Replace with the latest Ubuntu AMI in your region
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref MilvusSecurityGroup
+      IamInstanceProfile: !Ref EC2ECRInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda  # Specify the device name for the EBS volume
+          Ebs:
+            VolumeSize: 32  # Size of the EBS volume in GiB
+            VolumeType: gp3  # Choose the volume type (gp2, gp3, etc.)
+            DeleteOnTermination: true  # Delete volume when instance is terminated
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            set -e
+            sudo yum update -y
+            sudo yum install docker -y
+            sudo service docker start
+            sudo systemctl enable docker
+            # Download the installation script
+            sudo curl -sfL https://raw.githubusercontent.com/milvus-io/milvus/master/scripts/standalone_embed.sh -o standalone_embed.sh
+            sudo bash standalone_embed.sh start
+  MilvusSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Milvus EC2 instance
+      SecurityGroupIngress:
+        - IpProtocol: tcp # MILVUS_PORT
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp # MILVUS_PORT
+          FromPort: 19530
+          ToPort: 19530
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp # MILVUS_PORT
+          FromPort: 19121
+          ToPort: 19121
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp # STREAMLIT_PORT
+          FromPort: 8501
+          ToPort: 8501
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp # HTTP STANDARD PORT
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp # HTTPS STANDARD PORT
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+  EC2ECRRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'ec2.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: "EC2ECRAccessPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:BatchDeleteImage'
+                  - 'ecr:BatchGetImage'
+                  - 'ecr:CompleteLayerUpload'
+                  - 'ecr:CreateRepository'
+                  - 'ecr:DeleteLifecyclePolicy'
+                  - 'ecr:DeleteRegistryPolicy'
+                  - 'ecr:DeleteRepository'
+                  - 'ecr:DeleteRepositoryPolicy'
+                  - 'ecr:DescribeImageReplicationStatus'
+                  - 'ecr:DescribeImageScanFindings'
+                  - 'ecr:DescribeImages'
+                  - 'ecr:DescribePullThroughCacheRules'
+                  - 'ecr:DescribeRegistry'
+                  - 'ecr:DescribeRepositories'
+                  - 'ecr:GetAuthorizationToken'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:GetLifecyclePolicy'
+                  - 'ecr:GetLifecyclePolicyPreview'
+                  - 'ecr:GetRegistryPolicy'
+                  - 'ecr:GetRegistryScanningConfiguration'
+                  - 'ecr:GetRepositoryPolicy'
+                  - 'ecr:InitiateLayerUpload'
+                  - 'ecr:ListImages'
+                  - 'ecr:ListTagsForResource'
+                  - 'ecr:PutImage'
+                  - 'ecr:PutImageScanningConfiguration'
+                  - 'ecr:PutImageTagMutability'
+                  - 'ecr:PutLifecyclePolicy'
+                  - 'ecr:PutRegistryPolicy'
+                  - 'ecr:PutRegistryScanningConfiguration'
+                  - 'ecr:PutReplicationConfiguration'
+                  - 'ecr:SetRepositoryPolicy'
+                  - 'ecr:StartImageScan'
+                  - 'ecr:StartLifecyclePolicyPreview'
+                  - 'ecr:TagResource'
+                  - 'ecr:UntagResource'
+                  - 'ecr:UploadLayerPart'
+                Resource: "*"  
+              - Effect: Allow
+                Action:
+                  - 'sagemaker:InvokeEndpoint'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 'bedrock-runtime:Invoke'
+                  - 'bedrock-runtime:ModelInvoke'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                Resource: "*"
+
+  EC2ECRInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles:
+        - !Ref EC2ECRRole
+
+Outputs:
+  InstancePublicIP:
+    Description: Public IP of the EC2 instance
+    Value: !GetAtt MilvusInstance.PublicIp
+  InstanceId:
+    Description: Instance ID of the EC2 instance
+    Value: !Ref MilvusInstance

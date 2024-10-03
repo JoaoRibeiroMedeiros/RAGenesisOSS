@@ -1,0 +1,81 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to Vultr Container Registry
+      env:
+        VULTR_REGISTRY: sjc.vultrcr.com
+        VULTR_USERNAME: ${{ secrets.VULTR_USERNAME }}
+        VULTR_PASSWORD: ${{ secrets.VULTR_PASSWORD }}
+      run: echo "${{ secrets.VULTR_PASSWORD }}" | docker login $VULTR_REGISTRY -u ${{ secrets.VULTR_USERNAME }} --password-stdin
+
+    - name: Build and Push Docker Image
+      env:
+        IMAGE_NAME: sjc.vultrcr.com/ragenesis/ragenesis-dev:latest # point to your vultr repo
+      run: |
+        docker build -t $IMAGE_NAME .
+        docker push $IMAGE_NAME
+
+    - name: Log out from Vultr Container Registry
+      run: docker logout sjc.vultrcr.com
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Kubernetes
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+      with:
+        version: 'latest'
+    
+    - name: Create .kube directory
+      run: mkdir -p $HOME/.kube
+
+    - name: Set up kubeconfig
+      run: |
+         echo "${{ secrets.KUBECONFIG }}" | base64 --decode > $HOME/.kube/config
+
+    # - name: Test kubectl again
+    #   run: |
+    #      kubectl get nodes
+
+    - name: Create or Update AWS Credentials Secret
+      run: |
+          kubectl create secret generic aws-credentials \
+          --from-literal=aws_access_key_id="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          --from-literal=aws_secret_access_key="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          --namespace ragenesis-dev \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    # - name: Helm upgrade
+    #   run: |
+    #     helm repo add my-repo https://my-repo-url
+    #     helm repo update
+    #     helm upgrade --install api ./ragenesis --namespace ragenesis-prod 
+
+    - name: Restart Deployment
+      run: |
+        kubectl rollout restart deployment ragenesis-dev-deployment -n ragenesis-dev
