@@ -81,7 +81,6 @@ if needed, check session_state_schema.md file for all streamlit session state va
 * CONTAINER_NAME
 * AWS_ACCESS_KEY_ID
 * AWS_SECRET_ACCESS_KEY
-* SSH Configuration
 * SSH_USER
 * EC2_HOST
 * SSH_KEY_PATH
