@@ -1,6 +1,8 @@
 import re
 import numpy as np
 import pandas as pd
+import os
+import sys
 
 
 class Chunker:
@@ -98,7 +100,7 @@ class Chunker:
 
     def chunk_bible(self):
 
-        file_path = "data/sacred_data/bible.txt"
+        file_path = os.path.join("data", "sacred_data", "bible.txt")
         verses = []
         with open(file_path, "r") as file:
             for line in file:
@@ -145,7 +147,7 @@ class Chunker:
 
     def chunk_quran(self):
 
-        file_path = "data/sacred_data/quran.txt"
+        file_path = os.path.join("data", "sacred_data", "quran.txt")
         verses = []
         with open(file_path, "r") as file:
             for line in file:
@@ -164,7 +166,7 @@ class Chunker:
         return quran_verses_references, quran_verses
 
     def chunk_gita(self):
-        file_path = "data/sacred_data/gita.txt"
+        file_path = os.path.join("data", "sacred_data", "gita.txt")
         verses = []
         references = []
         in_translation_section = False

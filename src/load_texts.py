@@ -1,4 +1,3 @@
-
 # %%
 
 import numpy as np
@@ -7,6 +6,7 @@ from src.chunker import Chunker
 
 
 # Documents corpus (replace these with your actual documents)
+
 
 def make_text_data(
     texts,
@@ -24,15 +24,15 @@ def make_text_data(
     return text_data
 
 
-def get_text_df(text,text_data):
+def get_text_df(text, text_data):
     df = pd.DataFrame()
-    df['source'] = text_data[text][0]
-    df['reference'] = text_data[text][1]
-    df['verse'] = text_data[text][2]
+    df["source"] = text_data[text][0]
+    df["reference"] = text_data[text][1]
+    df["verse"] = text_data[text][2]
     return df
 
 
-def load_text(text, verbose = False):
+def load_text(text, verbose=False):
     texts = ["Bible_NT", "Quran", "Torah", "Gita", "Analects"]  # "Bible",
     chunker = Chunker()
     references_dict, verses_dict = chunker.chunk_all()
@@ -51,12 +51,8 @@ def load_text(text, verbose = False):
         print(lengths)
         print(all_length)
 
-    text_data = make_text_data(
-        texts, references_dict, verses_dict )
-    
-    text_df = get_text_df(text,text_data)
+    text_data = make_text_data(texts, references_dict, verses_dict)
+
+    text_df = get_text_df(text, text_data)
 
     return text_df
-
-
-

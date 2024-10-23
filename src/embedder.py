@@ -25,21 +25,17 @@ def encode(corpus, encoder_model="all_MiniLM_L6_v2", log=False):
         API_URL = os.getenv("HF_API_ENDPOINT")
 
         headers = {
-            "Accept" : "application/json",
+            "Accept": "application/json",
             "Authorization": "Bearer " + hf_api_key,
-            "Content-Type": "application/json" 
+            "Content-Type": "application/json",
         }
 
-        payload = {
-            "inputs": corpus,
-            "parameters": {}
-        }
+        payload = {"inputs": corpus, "parameters": {}}
 
         response = requests.post(API_URL, headers=headers, json=payload)
         corpus_embeddings = response.json()
 
         return corpus_embeddings
-        
 
     if encoder_model == "all_MiniLM_L6_v2_local":
 
@@ -142,7 +138,8 @@ def encode(corpus, encoder_model="all_MiniLM_L6_v2", log=False):
         def divide_list(corpus, request_size=2048):
             # Create a list of sublists, each with a maximum size of chunk_size
             return [
-                corpus[i : i + request_size] for i in range(0, len(corpus), request_size)
+                corpus[i : i + request_size]
+                for i in range(0, len(corpus), request_size)
             ]
 
         divided_corpus = divide_list(corpus, request_size=2048)
@@ -179,7 +176,10 @@ def create_embeddings_and_save(
     embeddings = encode(verses, encoder_model=encoder_model)
     if save:
         np.save(
-            f"data/vector-embeddings/{encoder_model}/{text}_embeddings.npy", embeddings
+            os.path.join(
+                "data", "vector-embeddings", encoder_model, f"{text}_embeddings.npy"
+            ),
+            embeddings,
         )
     return embeddings
 
@@ -187,6 +187,8 @@ def create_embeddings_and_save(
 def load_embeddings(text, encoder_model, save=True):
 
     embeddings = np.load(
-        "data/vector-embeddings/" + encoder_model + "/" + text + "_embeddings.npy"
+        os.path.join(
+            "data", "vector-embeddings", encoder_model, f"{text}_embeddings.npy"
+        )
     )
     return embeddings

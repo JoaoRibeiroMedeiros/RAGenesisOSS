@@ -10,7 +10,11 @@ from pymilvus import connections, utility
 
 from src.retriever import *
 
-from src.utils import reorder_lists, remove_chinese_characters, organize_centrality_type_occurrence
+from src.utils import (
+    reorder_lists,
+    remove_chinese_characters,
+    organize_centrality_type_occurrence,
+)
 
 
 def get_target_verses(collection, texts, encoder_model="all_MiniLM_L6_v2"):
@@ -57,8 +61,8 @@ def get_target_node_subgraph(G_rust, target_node, method="closeness", lim_neighb
     """
 
     if method == "degree":
-        centralit_dict = { n :
-            G_rust.degree(n) / (G_rust.num_nodes() - 1)
+        centralit_dict = {
+            n: G_rust.degree(n) / (G_rust.num_nodes() - 1)
             for n in range(G_rust.num_nodes())
         }
     elif method == "betweenness":
@@ -108,8 +112,12 @@ def get_hc_verses_and_sources_from_references(
     high_centrality_sources = []
     for high_centrality_reference in high_centrality_references:
 
-        high_centrality_verse = target_verses[target_verses['reference']==high_centrality_reference]['verse'].values[0]
-        high_centrality_source = target_verses[target_verses['reference']==high_centrality_reference]['source'].values[0]
+        high_centrality_verse = target_verses[
+            target_verses["reference"] == high_centrality_reference
+        ]["verse"].values[0]
+        high_centrality_source = target_verses[
+            target_verses["reference"] == high_centrality_reference
+        ]["source"].values[0]
 
         high_centrality_verses.append(high_centrality_verse)
         high_centrality_sources.append(high_centrality_source)
@@ -225,7 +233,9 @@ def plot_centrality_based_subgraph(
         st.pyplot(fig)
 
 
-def generate_networkx_plt(label_mapping, centrality_label_mapping, node_colors, edges, include_labels=True):
+def generate_networkx_plt(
+    label_mapping, centrality_label_mapping, node_colors, edges, include_labels=True
+):
 
     G = nx.Graph()
 
@@ -325,18 +335,24 @@ def write_main_verses_from_dict(text, network_analytics_dict):
     }
 
     from_centrality_type_to_verse_df = retrieve_special_nodes(text, special_nodes)
-    from_references_to_centrality_types, from_verses_to_centrality_types = organize_centrality_type_occurrence(from_centrality_type_to_verse_df)
+    from_references_to_centrality_types, from_verses_to_centrality_types = (
+        organize_centrality_type_occurrence(from_centrality_type_to_verse_df)
+    )
 
-    for reference, verse in zip(list(from_references_to_centrality_types.keys()), list(from_verses_to_centrality_types.keys())):
+    for reference, verse in zip(
+        list(from_references_to_centrality_types.keys()),
+        list(from_verses_to_centrality_types.keys()),
+    ):
 
-        st.markdown(f"### **{reference}**") # reference
-        st.markdown(verse) # verse
+        st.markdown(f"### **{reference}**")  # reference
+        st.markdown(verse)  # verse
 
         for centrality_type in from_references_to_centrality_types[reference]:
 
-            centrality_key = 'Highest ' + centrality_type + ' Centrality'
-            st.markdown(f"**Max {centrality_type}**: {network_analytics_dict[centrality_key][1]:.3f}")
-
+            centrality_key = "Highest " + centrality_type + " Centrality"
+            st.markdown(
+                f"**Max {centrality_type}**: {network_analytics_dict[centrality_key][1]:.3f}"
+            )
 
     main_references = [
         str(network_analytics_dict["Highest Degree Centrality"][0]),
@@ -345,10 +361,10 @@ def write_main_verses_from_dict(text, network_analytics_dict):
         str(network_analytics_dict["Highest Eigenvector Centrality"][0]),
     ]
     main_verses = [
-        str(from_centrality_type_to_verse_df['Degree']["verse"].values[0]),
-        str(from_centrality_type_to_verse_df['Betweenness']["verse"].values[0]),
-        str(from_centrality_type_to_verse_df['Closeness']["verse"].values[0]),
-        str(from_centrality_type_to_verse_df['Eigenvector']["verse"].values[0]),
+        str(from_centrality_type_to_verse_df["Degree"]["verse"].values[0]),
+        str(from_centrality_type_to_verse_df["Betweenness"]["verse"].values[0]),
+        str(from_centrality_type_to_verse_df["Closeness"]["verse"].values[0]),
+        str(from_centrality_type_to_verse_df["Eigenvector"]["verse"].values[0]),
     ]
 
     return main_verses, main_references
@@ -397,9 +413,7 @@ def plot_main_network_metrics_from_dict(
         "Average Eigenvector Centrality": network_analytics_dict[
             "Average Eigenvector Centrality"
         ],
-        "Max Degree Centrality": network_analytics_dict[
-            "Highest Degree Centrality"
-        ][1],
+        "Max Degree Centrality": network_analytics_dict["Highest Degree Centrality"][1],
         "Max Eigenvector Centrality": network_analytics_dict[
             "Highest Eigenvector Centrality"
         ][1],
@@ -451,7 +465,7 @@ def plot_main_network_metrics_from_dict(
     # Use HTML to center the dataframe
     st.markdown('<div class="centered">', unsafe_allow_html=True)
     st.dataframe(component_histogram_data.style.highlight_max(axis=0))
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.header("Semantic Network Metrics")
 
@@ -464,14 +478,16 @@ def plot_main_network_metrics_from_dict(
         .mark_bar()
         .encode(
             y=alt.Y("Metric", title="Metrics"),  # Move Metrics to y-axis
-            x=alt.X("Value", scale=alt.Scale(type="log"), title="Value (log scale)"),  # Move Value to x-axis
+            x=alt.X(
+                "Value", scale=alt.Scale(type="log"), title="Value (log scale)"
+            ),  # Move Value to x-axis
             color=alt.Color("Metric", legend=None),
             tooltip=["Metric", "Value"],
         )
         .properties(
             width=800,  # Increase the width for longer label visibility
             height=400,
-            title="Metrics on Logarithmic Scale"
+            title="Metrics on Logarithmic Scale",
         )
         .configure_axis(labelFontSize=12, titleFontSize=14)
         .configure_title(fontSize=16)
@@ -492,33 +508,40 @@ def get_centrality_types_stats_plot_crosstext(parameter, encoder_model, df):
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))  # Create a 2x2 grid of subplots
 
     # List of column names to plot, assuming they are in your DataFrame
-    centrality_types = ['degree', 'eigenvector', 'betweenness', 'closeness']  # Adjust these column names as necessary
+    centrality_types = [
+        "degree",
+        "eigenvector",
+        "betweenness",
+        "closeness",
+    ]  # Adjust these column names as necessary
 
     for ax, column in zip(axes.flat, centrality_types):
 
         # num_bars = df_transposed.shape[0]
-        
+
         colormap = cm.viridis(np.linspace(0, 0.7, 5))
 
         # Plot selected column with Viridis colors
-        bars = df_transposed.loc['average_'+column +'_centralitys'].plot(
-            kind='bar',
-            yerr=df_transposed.loc['std_'+ column+'_centralitys'],
+        bars = df_transposed.loc["average_" + column + "_centralitys"].plot(
+            kind="bar",
+            yerr=df_transposed.loc["std_" + column + "_centralitys"],
             capsize=4,
             color=colormap,
-            edgecolor='black',
+            edgecolor="black",
             linewidth=0.7,
-            ax=ax  # Specify the current axis
+            ax=ax,  # Specify the current axis
         )
 
         # Customize each subplot
-        ax.set_title(f" {column.capitalize()} Centrality ", fontsize=14, fontweight='bold')
+        ax.set_title(
+            f" {column.capitalize()} Centrality ", fontsize=14, fontweight="bold"
+        )
         ax.set_xlabel("Texts", fontsize=11)
         ax.set_ylabel("Average Value", fontsize=11)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45, fontsize=9)
         ax.set_yticklabels(ax.get_yticks(), fontsize=9)
-        ax.grid(axis='y', linestyle='--', alpha=0.7)
-        ax.set_yscale('log')
+        ax.grid(axis="y", linestyle="--", alpha=0.7)
+        ax.set_yscale("log")
 
         # Remove top and right spines
         sns.despine(ax=ax, left=True, bottom=True)
@@ -529,6 +552,12 @@ def get_centrality_types_stats_plot_crosstext(parameter, encoder_model, df):
     # Show the plot
     plt.show()
 
-    filepath = "../data/analytics_data/"+ encoder_model +"/"+ parameter+ "/crosstext/centrality_comparison.png"
-        
+    filepath = (
+        "../data/analytics_data/"
+        + encoder_model
+        + "/"
+        + parameter
+        + "/crosstext/centrality_comparison.png"
+    )
+
     plt.savefig(filepath)

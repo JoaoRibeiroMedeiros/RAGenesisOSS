@@ -158,7 +158,7 @@ def query_many_holy_text(
 
 def connect_and_query_holy_texts(
     holy_texts, query, top_k, local="ec2", encoder_model="all_MiniLM_L6_v2"
-):  
+):
 
     if local == "localdocker":
         ec2_public_ip = "host.docker.internal"
@@ -181,7 +181,7 @@ def connect_and_query_holy_texts(
         )
     elif local == "ec2":
 
-        ec2_public_ip = get_parameter('ragenesis_public_ip')
+        ec2_public_ip = get_parameter("ragenesis_public_ip")
         results_as_dicts = query_many_holy_text(
             ec2_public_ip,
             query,
@@ -225,7 +225,7 @@ def connect_and_query_holy_texts_ecumenical(
                 encoder_model=encoder_model,
             )
         elif local == "ec2":
-            ec2_public_ip = get_parameter('ragenesis_public_ip')
+            ec2_public_ip = get_parameter("ragenesis_public_ip")
             results_as_dicts = query_holy_text(
                 ec2_public_ip,
                 query,
@@ -254,20 +254,34 @@ def join_retrieved_references(results_references, results_verses):
         )
     return consolidated_retrieval
 
+
 def join_central_retrieved_references(results_references, results_verses):
-    order = ["Highest Degree Centrality", "Highest Eigenvector Centrality", "Highest Betweenness Centrality", "Highest  Closeness Centrality"]
+    order = [
+        "Highest Degree Centrality",
+        "Highest Eigenvector Centrality",
+        "Highest Betweenness Centrality",
+        "Highest  Closeness Centrality",
+    ]
     consolidated_retrieval = ""
     for centrality, reference, verse in zip(order, results_references, results_verses):
         consolidated_retrieval = (
-             consolidated_retrieval + centrality + " is the following: \n" +reference + "\n"  + verse + "\n\n"
+            consolidated_retrieval
+            + centrality
+            + " is the following: \n"
+            + reference
+            + "\n"
+            + verse
+            + "\n\n"
         )
     return consolidated_retrieval
 
 
-def retrieve_special_nodes_query(special_nodes, local, encoder_model="all_MiniLM_L6_v2"):
+def retrieve_special_nodes_query(
+    special_nodes, local, encoder_model="all_MiniLM_L6_v2"
+):
 
     if local == "ec2":
-        ec2_public_ip = get_parameter('ragenesis_public_ip')
+        ec2_public_ip = get_parameter("ragenesis_public_ip")
     else:
         ec2_public_ip = "localhost"
         ec2_public_ip = "localdocker"
@@ -326,15 +340,16 @@ def retrieve_special_nodes_query(special_nodes, local, encoder_model="all_MiniLM
         eigenvector_centrality_verse,
     )
 
+
 def retrieve_special_nodes(text, special_nodes):
 
     text_df = load_text(text)
-    centrality_types = ['Degree', 'Betweenness', 'Closeness', 'Eigenvector']
+    centrality_types = ["Degree", "Betweenness", "Closeness", "Eigenvector"]
     from_centrality_type_to_verse_df = {}
 
     for centrality_type in centrality_types:
-        node_reference = special_nodes["Highest "+centrality_type+" Centrality"][0]
-        special_verse_df = text_df[text_df['reference']==node_reference]
+        node_reference = special_nodes["Highest " + centrality_type + " Centrality"][0]
+        special_verse_df = text_df[text_df["reference"] == node_reference]
         from_centrality_type_to_verse_df[centrality_type] = special_verse_df
 
     return from_centrality_type_to_verse_df
@@ -348,3 +363,45 @@ def get_target_node_index(G_rust, target_reference):
     ][0]
     return target_node_index
 
+
+def search_and_filter_similar_vectors(
+    search_vector, collection, target_text, encoder_model, similarity_threshold=0.8
+):
+    partition_names = [encoder_model + "_" + target_text]
+    # Define your search parameters
+    search_params = {
+        "metric_type": "COSINE",
+        "params": {},
+    }
+
+    # Conduct the search
+    search_results = collection.search(
+        data=[search_vector],
+        anns_field="embedding",
+        param=search_params,
+        limit=8000,  # Set limit higher than to capture all potential results
+        partition_names=partition_names,
+        output_fields=["holytext", "reference", "verse", "embedding"],
+    )
+    # print(search_results)
+    results_as_dicts = from_query_results_to_dicts(search_results, scores=True)
+
+    # filter through threshold
+    similarity_filtered_results_as_dicts = [
+        result
+        for result in results_as_dicts
+        if (result["score"] >= similarity_threshold)
+    ]
+
+    return similarity_filtered_results_as_dicts
+
+
+def get_embeddings_for_target_text(text, collection, encoder_model="all_MiniLM_L6_v2"):
+    partition_names = [encoder_model + "_" + text]
+    expr = "holytext == '" + text + "'"
+    text_data = collection.query(
+        expr=expr,
+        partition_names=partition_names,
+        output_fields=["id", "holytext", "reference", "verse", "embedding"],
+    )
+    return text_data

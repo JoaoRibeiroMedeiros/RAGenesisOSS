@@ -1,4 +1,3 @@
-
 """
 
 This Script entails all necessary steps to load the Milvus VectorDB with 
@@ -21,20 +20,22 @@ from src.embedder import create_embeddings_and_save, load_embeddings
 from src.chunker import Chunker
 import json
 import os
-from src.utils import get_parameter
+from src.utils import get_parameter, setup_path
+
+setup_path()
 
 # %%
 
 load_embeddings_boolean = True
-local = False
+local = True
 
 if local == True:
     host = "localhost"
 else:
-    hf_api_endpoint = get_parameter('hf_api_endpoint')
-    hf_api_key = get_parameter('hf_api_key')
-    jina_api_key = get_parameter('jina_api_key')
-    host = get_parameter('ragenesis_public_ip')
+    hf_api_endpoint = get_parameter("hf_api_endpoint")
+    hf_api_key = get_parameter("hf_api_key")
+    jina_api_key = get_parameter("jina_api_key")
+    host = get_parameter("ragenesis_public_ip")
 
     os.environ["JINA_API_KEY"] = jina_api_key
     os.environ["HF_API_KEY"] = hf_api_key
@@ -145,7 +146,6 @@ for encoder_model in encoder_models:
     collection = Collection(name=collection_name, schema=schema)
     from_encoder_to_collection[encoder_model] = collection
 
-
     for text in texts:
         partition_name = encoder_model + "_" + text
         if not collection.has_partition(partition_name):
@@ -153,12 +153,13 @@ for encoder_model in encoder_models:
 
 # %%
 
+
 def make_insert_data(
     texts,
     references_dict,
     verses_dict,
     encoder_embedding_dict,
-    encoder_models=["all_MiniLM_L6_v2"],
+    encoder_models=["all_MiniLM_L6_v2", "jina_clip_v1"],
 ):
 
     from_encoder_to_insert_data = {}
@@ -177,6 +178,7 @@ def make_insert_data(
 
     return from_encoder_to_insert_data
 
+
 # make data
 
 from_encoder_to_insert_data = make_insert_data(
@@ -189,7 +191,10 @@ from_encoder_to_insert_data = make_insert_data(
 for encoder_model in encoder_models:
     print(f"Inserting data for {encoder_model}")
     for text in texts:
-        from_encoder_to_collection[encoder_model].insert(from_encoder_to_insert_data[encoder_model][text], partition_name=encoder_model + "_" + text)
+        from_encoder_to_collection[encoder_model].insert(
+            from_encoder_to_insert_data[encoder_model][text],
+            partition_name=encoder_model + "_" + text,
+        )
         print("Inserted " + text)
 
 # %%
@@ -202,21 +207,23 @@ for encoder_model in encoder_models:
         "params": {"nlist": 1536},
     }
 
-    from_encoder_to_collection[encoder_model].create_index(field_name="embedding", index_params=index_params)
+    from_encoder_to_collection[encoder_model].create_index(
+        field_name="embedding", index_params=index_params
+    )
     from_encoder_to_collection[encoder_model].load()
 
 # %%
 
 for encoder_model in encoder_models:
     # Check insertion
-    print(f"Number of entities in Milvus: {from_encoder_to_collection[encoder_model].num_entities}")
+    print(
+        f"Number of entities in Milvus: {from_encoder_to_collection[encoder_model].num_entities}"
+    )
     print(from_encoder_to_collection[encoder_model].partitions)
 
 # %%
 
 ### health check
-
-# host='localhost'
 
 # Connect to Milvus
 connections.connect("default", host=host, port="19530")
@@ -226,10 +233,5 @@ if connections.has_connection("default"):
     print("Milvus is healthy!")
 else:
     print("Milvus is not healthy.")
-
-# %%
-
-if utility.has_collection("embeddings_collection"):
-        Collection(name=collection_name).drop()
 
 # %%
