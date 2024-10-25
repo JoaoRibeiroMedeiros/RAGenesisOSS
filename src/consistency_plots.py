@@ -91,6 +91,7 @@ def plot_heatmap_for_cross_text_consistency(
 
     # Mask the zero values
     mask = _df == 0
+
     # Plot the heatmap
     fig = plt.figure(figsize=(8, 6))
     sns.heatmap(
@@ -105,7 +106,7 @@ def plot_heatmap_for_cross_text_consistency(
     )
 
     # Add labels
-    plt.title(f"Cross-Text Consistency at Threshold {str(threshold)}")
+    plt.title(f"Intertext Consistency at Threshold {str(threshold)}")
     plt.xlabel("Texts")
     plt.ylabel("Texts")
 

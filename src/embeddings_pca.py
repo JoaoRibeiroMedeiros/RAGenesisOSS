@@ -1,6 +1,11 @@
 import numpy as np
 import pandas as pd
 
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from scipy.spatial import ConvexHull
+
 from src.retriever import (
     get_embeddings_for_target_text,
     search_and_filter_similar_vectors,
@@ -135,12 +140,192 @@ def plot_interactive_embedding_pca_results(title, pca_df, explained_variance):
 
     return fig
 
+def plot_interactive_embedding_pca_results_convex_hull(title, pca_df, explained_variance):
+    # Create an interactive scatter plot with Plotly
+    fig = px.scatter(
+        pca_df,
+        x="PCA0",
+        y="PCA1",
+        color="text",
+        opacity=0.3,
+        title=f"PCA of " + title + " Embeddings",
+        labels={
+            "PCA0": f"PCA0 - {explained_variance[0] * 100:.2f}%",
+            "PCA1": f"PCA1 - {explained_variance[1] * 100:.2f}%",
+        },
+        width=1000,
+        height=700,
+    )
+
+
+    points = pca_df[["PCA0", "PCA1"]].values
+    hull = ConvexHull(points)
+
+    # Obtain the hull points for plotting
+    hull_points = np.append(hull.vertices, hull.vertices[0])  # Close the polygon
+    # Create a line for the convex hull
+    hull_line = go.Scatter(
+        x=points[hull_points, 0],
+        y=points[hull_points, 1],
+        mode='lines',
+        name='Convex Hull',
+        line=dict(color='red', width=2)  # Red color for the hull
+    )
+    
+    # Add the convex hull line to the figure
+    fig.add_trace(hull_line)
+
+    # Update layout to ensure grid is visible
+    fig.update_layout(
+        xaxis_title=f"PCA0 - {explained_variance[0] * 100:.2f}%",
+        yaxis_title=f"PCA1 - {explained_variance[1] * 100:.2f}%",
+        xaxis_showgrid=True,
+        yaxis_showgrid=True,
+    )
+
+    return fig
+
+def plot_interactive_embedding_pca_results_convex_hull(title, pca_df, explained_variance):
+    # Create an interactive scatter plot with Plotly
+    fig = px.scatter(
+        pca_df,
+        x="PCA0",
+        y="PCA1",
+        color="text",
+        opacity=0.3,
+        title=f"PCA of " + title + " Embeddings",
+        labels={
+            "PCA0": f"PCA0 - {explained_variance[0] * 100:.2f}%",
+            "PCA1": f"PCA1 - {explained_variance[1] * 100:.2f}%",
+        },
+        width=1000,
+        height=700,
+    )
+
+
+    points = pca_df[["PCA0", "PCA1"]].values
+    hull = ConvexHull(points)
+
+    # Obtain the hull points for plotting
+    hull_points = np.append(hull.vertices, hull.vertices[0])  # Close the polygon
+    # Create a line for the convex hull
+    hull_line = go.Scatter(
+        x=points[hull_points, 0],
+        y=points[hull_points, 1],
+        mode='lines',
+        name='Convex Hull',
+        line=dict(color='red', width=2)  # Red color for the hull
+    )
+    
+    # Add the convex hull line to the figure
+    fig.add_trace(hull_line)
+
+    # Update layout to ensure grid is visible
+    fig.update_layout(
+        xaxis_title=f"PCA0 - {explained_variance[0] * 100:.2f}%",
+        yaxis_title=f"PCA1 - {explained_variance[1] * 100:.2f}%",
+        xaxis_showgrid=True,
+        yaxis_showgrid=True,
+    )
+
+    return fig
+
+
+def plot_interactive_embedding_pca_results_convex_hull_2(title, pca_df, explained_variance):
+    # Create an interactive scatter plot with Plotly
+    fig = px.scatter(
+        pca_df,
+        x="PCA0",
+        y="PCA1",
+        color="text",
+        opacity=0.3,
+        title=f"PCA of " + title + " Embeddings",
+        labels={
+            "PCA0": f"PCA0 - {explained_variance[0] * 100:.2f}%",
+            "PCA1": f"PCA1 - {explained_variance[1] * 100:.2f}%",
+        },
+        width=1000,
+        height=700,
+    )
+
+    # Get unique text categories
+    unique_texts = pca_df['text'].unique()
+
+    # Define colors for each text category
+    color_map = {
+        unique_texts[0]: 'blue',
+        unique_texts[1]: 'red',
+        unique_texts[2]: 'green',
+        unique_texts[3]: 'purple',
+        unique_texts[4]: 'orange'
+    }
+
+    # Loop through each unique text category to compute and plot their convex hulls
+    for text in unique_texts:
+        # Filter points for the current text category
+        category_points = pca_df[pca_df['text'] == text][["PCA0", "PCA1"]].values
+        
+        if len(category_points) >= 3:  # Convex hull requires at least 3 points
+            # Compute the convex hull
+            hull = ConvexHull(category_points)
+            
+            # Obtain the hull points for plotting
+            hull_points = np.append(hull.vertices, hull.vertices[0])  # Close the polygon
+            
+            # Create a line for the convex hull for the current category
+            hull_line = go.Scatter(
+                x=category_points[hull_points, 0],
+                y=category_points[hull_points, 1],
+                mode='lines',
+                name=f'Convex Hull - {text}',
+                line=dict(color=color_map[text], width=2)  # Use the color from the color map
+            )
+            
+            # Add the convex hull line to the figure
+            fig.add_trace(hull_line)
+
+    # Update layout to ensure grid is visible
+    fig.update_layout(
+        xaxis_title=f"PCA0 - {explained_variance[0] * 100:.2f}%",
+        yaxis_title=f"PCA1 - {explained_variance[1] * 100:.2f}%",
+        xaxis_showgrid=True,
+        yaxis_showgrid=True,
+    )
+
+    return fig
+
+
 
 def make_pyplot_plots(pca_dfs, explained_variances, encoder_models):
 
     for encoder_model in encoder_models:
         # To display the figure, you would call:
         fig = plot_interactive_embedding_pca_results(
+            encoder_model, pca_dfs[encoder_model], explained_variances[encoder_model]
+        )
+        fig.show()
+        fig.write_html(encoder_model + "_PCA_embeddings_holy_books.html")
+
+    return pca_dfs
+
+def make_pyplot_plots_convex_hull(pca_dfs, explained_variances, encoder_models):
+
+    for encoder_model in encoder_models:
+        # To display the figure, you would call:
+        fig = plot_interactive_embedding_pca_results_convex_hull(
+            encoder_model, pca_dfs[encoder_model], explained_variances[encoder_model]
+        )
+        fig.show()
+        fig.write_html(encoder_model + "_PCA_embeddings_holy_books.html")
+
+    return pca_dfs
+
+
+def make_pyplot_plots_convex_hull_2(pca_dfs, explained_variances, encoder_models):
+
+    for encoder_model in encoder_models:
+        # To display the figure, you would call:
+        fig = plot_interactive_embedding_pca_results_convex_hull_2(
             encoder_model, pca_dfs[encoder_model], explained_variances[encoder_model]
         )
         fig.show()
@@ -183,15 +368,26 @@ def make_sns_plot(pca_dfs, explained_variances, encoder_model):
     return fig
 
 
-def get_convex_hull_hypervolume(pca_dfs, encoder_model, texts):
+def get_convex_hull_hypervolume(pca_dfs, encoder_model, texts, normalize = True):
 
     from_text_to_semantic_hypervolume = {}
+
     for text in texts:
         text_data = pca_dfs[encoder_model][pca_dfs[encoder_model]["text"] == text]
         text_data = text_data.drop(columns="text")
         hull = ConvexHull(text_data)
         volume = hull.volume
         from_text_to_semantic_hypervolume[text] = volume
+
+    if normalize:
+
+        text_data = pca_dfs[encoder_model]
+        text_data = text_data.drop(columns="text")
+        hull = ConvexHull(text_data)
+        total_volume = hull.volume
+    
+    for text in texts:
+        from_text_to_semantic_hypervolume[text] = from_text_to_semantic_hypervolume[text]/total_volume
 
     return from_text_to_semantic_hypervolume
 
@@ -226,7 +422,7 @@ def normalize_per_token_size(from_encoder_model_to_from_text_to_semantic_hypervo
             ][
                 text
             ] = (
-                1000000
+                1000
                 * from_encoder_model_to_from_text_to_semantic_hypervolume[
                     encoder_model
                 ][text]
@@ -273,8 +469,9 @@ def plot_cumulative_explained_variance_plotly(explained_variances):
     fig = go.Figure()
 
     encoder_models = list(explained_variances.keys())
-    # Define a color palette
-    colors = px.colors.sequential.Winter
+
+    # Define colors for the models (blue for the first, green for the second)
+    colors = ['blue', 'green']
 
     # Plot data for each encoder model
     for idx, model in enumerate(encoder_models):
@@ -285,7 +482,7 @@ def plot_cumulative_explained_variance_plotly(explained_variances):
                 y=cumsum_variance,
                 mode='lines+markers',
                 name=model,
-                line=dict(color=colors[idx % len(colors)], width=2),
+                line=dict(color=colors[idx % len(colors)], width=2),  # Set line color directly
                 marker=dict(symbol='circle', size=8)
             )
         )
@@ -308,12 +505,11 @@ def plot_cumulative_explained_variance_plotly(explained_variances):
     # Show the interactive plot
     fig.show()
 
-# Example usage with your data:
-# plot_cumulative_explained_variance(explained_variances)
+
 
 def plot_semantic_hyper_volume_per_text(
     from_encoder_model_to_from_text_to_semantic_hypervolume,
-    title="Semantic Hyper Volume",
+    title="Semantic Hyper Volume Fraction",
 ):
 
     data = from_encoder_model_to_from_text_to_semantic_hypervolume

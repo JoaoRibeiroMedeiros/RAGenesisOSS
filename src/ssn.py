@@ -175,13 +175,14 @@ def get_cross_text_consistency(similarity_fraction_at_threshold_dict):
                 similarity_fraction_at_threshold_dict[text_j][text_i]
                 * similarity_fraction_at_threshold_dict[text_i][text_i]
             )
-            cross_text_consistency_formula_2[text_i][text_j] = 0.5 * sqrt(
+            cross_text_consistency_formula_2[text_i][text_j] =  sqrt(
                 similarity_fraction_at_threshold_dict[text_i][text_j]
                 * similarity_fraction_at_threshold_dict[text_i][text_i]
-            ) + 0.5 * sqrt(
+            )/ similarity_fraction_at_threshold_dict[text_i][text_i]
+            +  sqrt(
                 similarity_fraction_at_threshold_dict[text_j][text_i]
                 * similarity_fraction_at_threshold_dict[text_j][text_j]
-            )
+            )/ similarity_fraction_at_threshold_dict[text_j][text_j]
 
     return cross_text_consistency_formula_1, cross_text_consistency_formula_2
 
