@@ -4,7 +4,7 @@
 
 Using Retrieval-Augmented Generation (RAG) technology, RAGenesis empowers users to engage with scripture in an ecumenical and transformative way. 
 
-Explore the holy texts of the **Bible**, the **Quran**, the **Bhagavad Gita**, and the **Analects** with the help of AI!
+Explore the holy texts of the **Torah**, the **Bible**, the **Quran**, the **Bhagavad Gita**, and the **Analects** with the help of AI!
 
 ## Table of Contents
 
