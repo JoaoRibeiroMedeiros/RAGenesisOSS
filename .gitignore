@@ -11,7 +11,7 @@ src/vectordb_ref.py
 flagged
 requirements_gr.txt
 app_gradio.py
-deploy
+
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,git
