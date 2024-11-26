@@ -17,7 +17,7 @@ from pymilvus import (
 )
 import numpy as np
 from src.embedder import create_embeddings_and_save, load_embeddings
-from src.chunker import Chunker
+from src.chunker import ChunkerHolyTexts
 import json
 import os
 from src.utils import get_parameter, setup_path
@@ -44,7 +44,7 @@ else:
 # Documents corpus (replace these with your actual documents)
 texts = ["Bible_NT", "Quran", "Torah", "Gita", "Analects"]  # "Bible",
 
-chunker = Chunker()
+chunker = ChunkerHolyTexts()
 
 references_dict, verses_dict = chunker.chunk_all()
 

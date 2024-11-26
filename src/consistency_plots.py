@@ -3,6 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.express as px
 import numpy as np
+import networkx as nx
 
 
 def plot_heatmap_for_similarity_fraction(
@@ -148,3 +149,37 @@ def plot_heatmap_for_cross_text_consistency_plotly(
     
     # Show the figure
     fig.show()
+
+
+def plot_intertext_similarity_graph(data, model_name):
+    G = nx.DiGraph()  # Create a directed graph
+
+    # Populate the graph with edges and their weights
+    edges = []
+    for source, targets_dict in data[model_name].items():
+        for target, value in targets_dict.items():
+            if value > 0:
+                G.add_edge(source, target, weight=value*1000)
+                edges.append((source, target, value))
+
+    # Get edge values for color mapping
+    edge_values = np.array([weight for _, _, weight in edges])
+    norm = plt.Normalize(edge_values.min(), edge_values.max())  # Normalize for colormap
+    colors = plt.cm.viridis(norm(edge_values))  # Use the viridis colormap
+
+    # Position nodes using circular layout
+    num_nodes = len(G.nodes())
+    # Position nodes evenly on a circle
+    angles = np.linspace(np.pi/2, 2* np.pi + np.pi/2, num_nodes, endpoint=False)  # Angles for nodes
+    pos = {node: (np.cos(angle), np.sin(angle)) for node, angle in zip(G.nodes(), angles)}  # (x, y) positions
+
+
+    # Draw the graph with colored edges
+    plt.figure(figsize=(7, 5))
+    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=2000, font_size=10, font_weight='bold', arrows=True, edge_color=colors[:, :3])
+
+    # Draw edge labels
+    edge_labels = {(source, target): f'{value:.4f}' for source, target, value in edges}
+    # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    
+    plt.title('Intertext Similarity Graph - threshold 0.75 - '+ model_name)

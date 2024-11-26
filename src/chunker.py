@@ -5,7 +5,7 @@ import os
 import sys
 
 
-class Chunker:
+class ChunkerHolyTexts:
     def __init__(self):
         self.texts = ["Bible", "Bible_NT", "Quran", "Torah", "Gita", "Analects"]
 
@@ -15,6 +15,7 @@ class Chunker:
         verses_dict = {}
 
         for text in self.texts:
+
             references, verses = self.call_method_by_string(text)
             references_dict[text] = references
             verses_dict[text] = verses

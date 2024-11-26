@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from src.chunker import Chunker
+from src.chunker import ChunkerHolyTexts
 
 
 # Documents corpus (replace these with your actual documents)
@@ -34,7 +34,7 @@ def get_text_df(text, text_data):
 
 def load_text(text, verbose=False):
     texts = ["Bible_NT", "Quran", "Torah", "Gita", "Analects"]  # "Bible",
-    chunker = Chunker()
+    chunker = ChunkerHolyTexts()
     references_dict, verses_dict = chunker.chunk_all()
     all_verses = (
         # verses_dict["Bible"]

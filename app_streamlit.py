@@ -62,6 +62,9 @@ def set_parameter(parameter):
 def set_verse(verse):
     st.session_state.target_node_reference[st.session_state.selected_text] = verse
 
+# Set the page configuration including the favicon
+st.set_page_config(page_title="RAGenesis", page_icon="images/favicon.ico", layout="centered")
+
 
 st.session_state.counter = 0
 
@@ -237,43 +240,51 @@ def verse_uni_verse():
             "Enter Query", value=st.session_state.query
         )
     else:
-        st.session_state.query = st.text_input("Enter Query", value="God is love.")
+        st.session_state.query = st.text_input("Enter Query", value=" ")
 
-    if st.session_state.method == "Open":
-        results_sources, results_references, results_verses = (
-            connect_and_query_holy_texts(
-                st.session_state.selected_texts,
-                st.session_state.query,
-                top_k=5,
-                local=local,
-                encoder_model=st.session_state.encoder_model,
+    if st.session_state.query != " ":
+
+        if st.session_state.method == "Open":
+            results_sources, results_references, results_verses = (
+                connect_and_query_holy_texts(
+                    st.session_state.selected_texts,
+                    st.session_state.query,
+                    top_k=5,
+                    local=local,
+                    encoder_model=st.session_state.encoder_model,
+                )
             )
+        elif st.session_state.method == "Ecumenical":
+            results_sources, results_references, results_verses = (
+                connect_and_query_holy_texts_ecumenical(
+                    st.session_state.selected_texts,
+                    st.session_state.query,
+                    top_k=1,
+                    local=local,
+                    encoder_model=st.session_state.encoder_model,
+                )
+            )
+
+        display_retrieval(results_sources, results_references, results_verses)
+
+        if st.session_state.oracle == "On":
+
+            st.title("The Oracle Speaks!")
+
+            with st.spinner("Patience grasshopper..."):
+
+                retrieval = join_retrieved_references(results_references, results_verses)
+                response = get_oracle_response(
+                    st.session_state.query + retrieval, local=local, agent="oracle"
+                )
+
+                st.markdown(response)
+
+    else :
+
+        st.markdown(
+        " What are you looking for ? "
         )
-    elif st.session_state.method == "Ecumenical":
-        results_sources, results_references, results_verses = (
-            connect_and_query_holy_texts_ecumenical(
-                st.session_state.selected_texts,
-                st.session_state.query,
-                top_k=1,
-                local=local,
-                encoder_model=st.session_state.encoder_model,
-            )
-        )
-
-    display_retrieval(results_sources, results_references, results_verses)
-
-    if st.session_state.oracle == "On":
-
-        st.title("The Oracle Speaks!")
-
-        with st.spinner("Patience grasshopper..."):
-
-            retrieval = join_retrieved_references(results_references, results_verses)
-            response = get_oracle_response(
-                st.session_state.query + retrieval, local=local, agent="oracle"
-            )
-
-            st.markdown(response)
 
 
 def semantic_network(local=local):
@@ -529,5 +540,23 @@ elif st.session_state.page == "Bibliography":
 else:
     verse_uni_verse()
 
+################ USAGE METRICS ################
 
-# %%
+from prometheus_client import start_http_server, Counter, Gauge
+import threading
+
+# Create metrics for tracking
+TOTAL_USERS = Counter('total_users', 'Total number of users who have accessed the app')
+
+def track_user_activity():
+    TOTAL_USERS.inc()  # Increment on each access
+
+def start_metrics_server():
+    start_http_server(8000)  # Expose metrics on port 8000
+
+# Call user activity tracking outside the guard to ensure it's tracked during app usage
+track_user_activity()
+
+if __name__ == '__main__':
+    # Start the metrics server in a new thread when the script is run directly
+    threading.Thread(target=start_metrics_server, daemon=True).start()

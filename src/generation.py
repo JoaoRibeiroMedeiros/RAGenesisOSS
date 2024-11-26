@@ -53,14 +53,6 @@ def get_oracle_response(user_query, agent="oracle", local="localdocker"):
                         making reference to the passages that were given together with the user query
                         make sure you interweave the passages into a coherent message.   
                         Also make sure you conclude your message before reaching 400 words.[/INST]"""
-    if agent == "oracle":
-        # Start a conversation with the user message.
-        instruction = """[INST]You are an oracle who will be fed a user query and several 
-                        verses which are semantically connected to that query.
-                        Make sure your response explores the theme shared by user with wisdom
-                        making reference to the passages that were given together with the user query
-                        make sure you interweave the passages into a coherent message.   
-                        Also make sure you conclude your message before reaching 400 words.[/INST]"""
 
     if agent == "scientist":
         # Start a conversation with the user message.
